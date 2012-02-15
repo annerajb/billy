@@ -168,13 +168,21 @@ def import_bill(data, votes, categorizer):
 
     if not bill:
         insert_with_id(data)
+        return "insert"
     else:
         update(bill, data, db.bills, bill_sneaky_update_filter)
+        return "update"
 
 
 def import_bills(abbr, data_dir):
     data_dir = os.path.join(data_dir, abbr)
     pattern = os.path.join(data_dir, 'bills', '*.json')
+
+    counts = {
+        "update" : 0,
+        "insert" : 0,
+        "total"  : 0
+    }
 
     votes = import_votes(data_dir)
     try:
@@ -188,7 +196,9 @@ def import_bills(abbr, data_dir):
         with open(path) as f:
             data = prepare_obj(json.load(f))
 
-        import_bill(data, votes, categorizer)
+        counts["total"] += 1
+        ret = import_bill(data, votes, categorizer)
+        counts[ret] += 1
 
     logger.info('imported %s bill files' % len(paths))
 
@@ -202,6 +212,7 @@ def import_bills(abbr, data_dir):
 
     ensure_indexes()
 
+    return counts
 
 # fixing bill ids
 _bill_id_re = re.compile(r'([A-Z]*)\s*0*([-\d]+)')
